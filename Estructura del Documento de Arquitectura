@@ -1,0 +1,40 @@
+# Arquitectura del Módulo Financiero y Control de Caja - Pos Electroavila V3
+**Autor:** Fabio Alfonso Ávila Bueno (Gerente Comercial - Almacén Electro Ávila)
+**Fecha de Diseño:** 13 de Noviembre, 2026
+**Fecha Objetivo de Despliegue (Piloto):** 02 de Enero, 2027
+
+## 1. Principios Rectores del Sistema
+- **Cero Mezcla Patrimonial:** Eliminación definitiva de la "cuenta común". Separación estricta entre capital operativo del negocio y finanzas personales.
+- **Distribución Post-Cierre:** Ningún fondo se reparte en tiempo real durante la operación diurna. Toda la distribución matemática del dinero ocurre *después* de que el arqueo diario de caja se encuentre en estado `CERRADO`.
+- **Protección de Liquidez:** El dinero en caja durante el día permanece 100% disponible para emergencias operativas o reabastecimiento rápido de inventario.
+
+---
+
+## 2. Estructura del Backend (Google Sheets / Base de Datos Relacional)
+
+### A. Tabla: `cuentas_bancarias` (Canales Físicos)
+- `id_cuenta` (Key, Text)
+- `nombre_banco` (Enum: Bancolombia, Davivienda, Nequi)
+- `saldo_actual` (Price)
+
+### B. Tabla: `fondos_destino` (Los 3 Grandes Grupos Lógicos)
+- `id_fondo` (Key, Text)
+- `nombre_fondo` (Enum: 1. Reabastecimiento, 2. Ahorro y CDT, 3. Gastos Personales)
+- `porcentaje_meta` (Decimal)
+- `monto_acumulado` (Price)
+
+### C. Tabla: `compromisos_fijos` (Egresos Operativos Obligatorios)
+- `id_compromiso` (Key, Text)
+- `concepto` (Text: Arriendo, Energía, Internet, Servicios Generales, Telefonía Mixta)
+- `monto_estimado` (Price)
+- `fecha_corte_inicio` / `fecha_corte_fin` (Date - Ej: Arriendo del 14 al 16)
+- `estado` (Enum: Pendiente, Pagado)
+
+---
+
+## 3. Motor de Distribución Nocturna (Post-Cierre)
+Jerarquía de asignación de excedentes tras validar el arqueo diario:
+1. **Retención para Compromisos Fijos:** Provisión diaria proporcional para arriendo, servicios e internet.
+2. **Fondo #1 (Reabastecimiento):** Porcentaje mayoritario destinado al músculo de inventario en Bancolombia.
+3. **Fondo #2 (Ahorro/CDT):** Colchón de reserva y estabilidad en Davivienda.
+4. **Fondo #3 (Gastos Personales):** Sueldo/retiros en Nequi (**Sujeto a Candado Lógico:** Bloqueado si el Fondo #1 o los fijos no están cubiertos).
